@@ -1,4 +1,8 @@
-﻿using System;
+﻿using Microsoft.AspNet.SignalR;
+using Microsoft.Owin.Cors;
+using Microsoft.Owin.Hosting;
+using Owin;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,21 +13,71 @@ namespace SensorsHost
 {
     class Program
     {
+        const string SelfHostUrl = "http://localhost:8080";
+
         static void Main(string[] args)
         {
-            var lightSensor = LightSensor.GetDefault();
+            using (WebApp.Start(SelfHostUrl))
+            {
+                Console.WriteLine("Press [Enter] to exit.");
+                Console.ReadLine();
+            }
+        }
+    }
+
+    class Startup
+    {
+        public void Configuration(IAppBuilder app)
+        {
+            app.UseCors(CorsOptions.AllowAll);
+            app.MapSignalR();
+            // Specify the path explicitly.
+            //app.MapSignalR("/signalr", new HubConfiguration());
+
+            LightSensorHub.StartBroadcast();
+            CompassHub.StartBroadcast();
+        }
+    }
+
+    public class LightSensorHub : Hub
+    {
+        static readonly IHubContext hubContext = GlobalHost.ConnectionManager.GetHubContext<LightSensorHub>();
+        static readonly LightSensor lightSensor = LightSensor.GetDefault();
+
+        public static void StartBroadcast()
+        {
             lightSensor.ReportInterval = 500;
-            Action<LightSensorReading> notifyLight = r => Console.WriteLine("Light: {0} lx", r.IlluminanceInLux);
-            notifyLight(lightSensor.GetCurrentReading());
-            lightSensor.ReadingChanged += (o, e) => notifyLight(e.Reading);
+            lightSensor.ReadingChanged += (o, e) =>
+            {
+                Console.WriteLine("Light: {0} lx", e.Reading.IlluminanceInLux);
+                hubContext.Clients.All.NotifyIlluminanceInLux(e.Reading.IlluminanceInLux);
+            };
+        }
 
-            var compass = Compass.GetDefault();
-            Action<CompassReading> notifyCompass = r => Console.WriteLine("Compass: {0:N3} °", r.HeadingMagneticNorth);
-            notifyCompass(compass.GetCurrentReading());
-            compass.ReadingChanged += (o, e) => notifyCompass(e.Reading);
+        public float GetIlluminanceInLux()
+        {
+            return lightSensor.GetCurrentReading().IlluminanceInLux;
+        }
+    }
 
-            Console.WriteLine("Press [Enter] to exit.");
-            Console.ReadLine();
+    public class CompassHub : Hub
+    {
+        static readonly IHubContext hubContext = GlobalHost.ConnectionManager.GetHubContext<CompassHub>();
+        static readonly Compass compass = Compass.GetDefault();
+
+        public static void StartBroadcast()
+        {
+            compass.ReadingChanged += (o, e) =>
+            {
+                var rounded = Math.Round(e.Reading.HeadingMagneticNorth, 3);
+                Console.WriteLine("Compass: {0} °", rounded);
+                hubContext.Clients.All.NotifyHeadingMagneticNorth(rounded);
+            };
+        }
+
+        public double GetHeadingMagneticNorth()
+        {
+            return Math.Round(compass.GetCurrentReading().HeadingMagneticNorth, 3);
         }
     }
 }
