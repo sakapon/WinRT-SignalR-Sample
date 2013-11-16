@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Sensors Client</title>
+    <script src="Scripts/jquery-2.0.3.min.js"></script>
+    <script src="Scripts/jquery.signalR-2.0.0.min.js"></script>
+    <script src="http://localhost:8080/signalr/hubs"></script>
+</head>
+<body>
+    <script type="text/javascript">
+        $(function () {
+            $.connection.hub.url = "http://localhost:8080/signalr";
+            var appModel = { light: 0, compass: 0 };
+
+            var lightSensor = $.connection.lightSensorHub;
+            lightSensor.client.notifyIlluminanceInLux = function (illuminanceInLux) {
+                appModel.light = illuminanceInLux;
+                console.log("Light: %f lx", appModel.light);
+            };
+            var compass = $.connection.compassHub;
+            compass.client.notifyHeadingMagneticNorth = function (headingMagneticNorth) {
+                appModel.compass = headingMagneticNorth;
+                console.log("Compass: %f °", appModel.compass);
+            };
+
+            $.connection.hub.start()
+                .done(function () {
+                    lightSensor.server.getIlluminanceInLux()
+                        .done(lightSensor.client.notifyIlluminanceInLux);
+                    compass.server.getHeadingMagneticNorth()
+                        .done(compass.client.notifyHeadingMagneticNorth);
+                });
+        });
+    </script>
+</body>
+</html>
