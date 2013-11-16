@@ -6,8 +6,32 @@
     <script src="Scripts/jquery-2.0.3.min.js"></script>
     <script src="Scripts/jquery.signalR-2.0.0.min.js"></script>
     <script src="http://localhost:8080/signalr/hubs"></script>
+    <style type="text/css">
+        div {
+            margin: 20px;
+        }
+
+        p {
+            color: #ff9900;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        img#directionImage {
+            margin-left: 100px;
+            transform-origin: 50% 70%;
+        }
+    </style>
 </head>
 <body>
+    <div>
+        <p>Light: <span id="lightText">0</span>&nbsp;lx</p>
+        <p>Compass: <span id="compassText">0</span>&nbsp;°</p>
+    </div>
+    <div>
+        <img id="directionImage" src="Images/direction.png" alt="" />
+    </div>
     <script type="text/javascript">
         $(function () {
             $.connection.hub.url = "http://localhost:8080/signalr";
@@ -16,12 +40,12 @@
             var lightSensor = $.connection.lightSensorHub;
             lightSensor.client.notifyIlluminanceInLux = function (illuminanceInLux) {
                 appModel.light = illuminanceInLux;
-                console.log("Light: %f lx", appModel.light);
+                renderLight();
             };
             var compass = $.connection.compassHub;
             compass.client.notifyHeadingMagneticNorth = function (headingMagneticNorth) {
                 appModel.compass = headingMagneticNorth;
-                console.log("Compass: %f °", appModel.compass);
+                renderCompass();
             };
 
             $.connection.hub.start()
@@ -31,6 +55,26 @@
                     compass.server.getHeadingMagneticNorth()
                         .done(compass.client.notifyHeadingMagneticNorth);
                 });
+
+            function renderLight() {
+                console.log("Light: %f lx", appModel.light);
+                $("#lightText").text(appModel.light);
+                $("body").css({ backgroundColor: getGrayColor(appModel.light, 306) });
+            }
+
+            function renderCompass() {
+                console.log("Compass: %f °", appModel.compass);
+                $("#compassText").text(appModel.compass);
+                $("#directionImage").css({ transform: "rotate(" + (360 - appModel.compass) + "deg)" });
+            }
+
+            function getGrayColor(value, maxValue) {
+                var brightness =
+                    value < 0 ? 51 :
+                    value > maxValue ? 255 :
+                    parseInt(51 + 204 * value / maxValue);
+                return "rgb(" + brightness + ", " + brightness + ", " + brightness + ")";
+            }
         });
     </script>
 </body>
