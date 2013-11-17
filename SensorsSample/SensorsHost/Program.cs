@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Windows.Devices.Sensors;
 
 namespace SensorsHost
@@ -14,14 +15,40 @@ namespace SensorsHost
     class Program
     {
         const string SelfHostUrl = "http://localhost:8080";
+        const string AppName = "Sensors Host";
+        static IDisposable webApp;
+        static NotifyIcon notifyIcon;
 
         static void Main(string[] args)
         {
-            using (WebApp.Start(SelfHostUrl))
+            webApp = WebApp.Start(SelfHostUrl);
+            ShowNotifyIcon();
+            Application.Run();
+        }
+
+        static void ShowNotifyIcon()
+        {
+            var exitMenu = new ToolStripMenuItem("終了(&X)");
+            exitMenu.Click += (o, e) => ExitApp();
+            var contextMenuStrip = new ContextMenuStrip();
+            contextMenuStrip.Items.Add(exitMenu);
+
+            notifyIcon = new NotifyIcon
             {
-                Console.WriteLine("Press [Enter] to exit.");
-                Console.ReadLine();
-            }
+                ContextMenuStrip = contextMenuStrip,
+                Icon = Properties.Resources.ServiceIcon,
+                Text = AppName,
+                Visible = true,
+            };
+
+            notifyIcon.ShowBalloonTip(3000, AppName, "サービスを開始しました。", ToolTipIcon.Info);
+        }
+
+        static void ExitApp()
+        {
+            webApp.Dispose();
+            notifyIcon.Dispose();
+            Application.Exit();
         }
     }
 
@@ -49,7 +76,7 @@ namespace SensorsHost
             lightSensor.ReportInterval = 500;
             lightSensor.ReadingChanged += (o, e) =>
             {
-                Console.WriteLine("Light: {0} lx", e.Reading.IlluminanceInLux);
+                //Console.WriteLine("Light: {0} lx", e.Reading.IlluminanceInLux);
                 hubContext.Clients.All.NotifyIlluminanceInLux(e.Reading.IlluminanceInLux);
             };
         }
@@ -70,7 +97,7 @@ namespace SensorsHost
             compass.ReadingChanged += (o, e) =>
             {
                 var rounded = Math.Round(e.Reading.HeadingMagneticNorth, 3);
-                Console.WriteLine("Compass: {0} °", rounded);
+                //Console.WriteLine("Compass: {0} °", rounded);
                 hubContext.Clients.All.NotifyHeadingMagneticNorth(rounded);
             };
         }
