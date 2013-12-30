@@ -12,8 +12,8 @@ An ASP.NET SignalR sample using data of Windows 8 sensors.
 
 #### Screen shots:  
 HTML client for ASP.NET SignalR service  
-![HTML client for ASP.NET SignalR service 1](http://sakapon.files.wordpress.com/2013/11/image14.png)  
-![HTML client for ASP.NET SignalR service 2](http://sakapon.files.wordpress.com/2013/11/image15.png)  
+![HTML client for ASP.NET SignalR service 1](Images/Preview/3-Web-2.png)  
+![HTML client for ASP.NET SignalR service 2](Images/Preview/3-Web-3.png)  
 
 Icon in the notification area  
-![Icon in the notification area](http://sakapon.files.wordpress.com/2013/11/image23.png)  
+![Icon in the notification area](Images/Preview/5-Host-1.png)  
